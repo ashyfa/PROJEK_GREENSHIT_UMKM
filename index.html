@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GreenShift UMKM</title>
+<style>
+:root{--bg:#FDF0DC;--g:#A8CC12;--m:#8B2A3E;--r:#E0114A;--w:#fff;--line:#c9de5a}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,sans-serif}
+body{background:#222;display:flex;justify-content:center}
+.phone{width:100%;max-width:420px;min-height:100vh;background:var(--bg);color:var(--m);position:relative;display:flex;flex-direction:column}
+#app{flex:1;padding:18px 16px 90px;overflow-y:auto}
+h1{font-size:28px;font-weight:800;line-height:1.1;margin:8px 0 4px}
+h2{font-size:17px;margin:14px 0 8px}
+.sub{font-size:13px;margin-bottom:12px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.back{border:0;background:var(--w);border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;color:var(--m);box-shadow:0 1px 3px #0002}
+.pill{background:var(--g);border-radius:99px;padding:5px 12px;font-size:11px;font-weight:700;display:inline-block}
+.card{background:var(--w);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px}
+.green{background:var(--g);border-radius:18px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.menu{text-align:left;cursor:pointer;position:relative}
+.menu .em{font-size:44px;text-align:center;background:var(--bg);border-radius:12px;padding:8px;margin-bottom:6px}
+.menu.on{border:2px solid var(--g)}
+.price{font-weight:800;margin:2px 0}
+.qty{display:flex;align-items:center;gap:8px;margin-top:6px}
+.qty button,.sm{border:0;background:var(--g);color:var(--m);border-radius:10px;width:32px;height:32px;font-size:18px;font-weight:800;cursor:pointer}
+.sm.del{background:var(--r);color:#fff}
+.btn{width:100%;border:0;border-radius:14px;padding:14px;font-size:15px;font-weight:800;background:var(--g);color:var(--m);cursor:pointer;margin-top:8px}
+.btn.red{background:var(--r);color:#fff}.btn.out{background:var(--w);border:1px solid var(--line)}
+.btn:disabled{opacity:.5}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0e6d0;font-size:14px}
+.row:last-child{border:0}
+.bar{height:8px;background:#eee;border-radius:9px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--g)}
+.bar i.low{background:var(--r)}
+.tag{font-size:11px;font-weight:700;border-radius:99px;padding:3px 8px;background:var(--bg)}
+.tag.red{background:var(--r);color:#fff}
+input,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--m);font-size:14px}
+.f{display:flex;gap:6px;margin-top:6px}.f input{flex:1}.f input.s{flex:.6}.f select{flex:.6}
+.opts{display:flex;gap:8px;margin:8px 0}
+.opt{flex:1;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--w);font-weight:700;cursor:pointer;text-align:center;color:var(--m)}
+.opt.sel{background:var(--g)}
+.big{font-size:30px;font-weight:800}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quick .card{cursor:pointer;margin:0}
+.alert{border:1px solid var(--r);border-radius:14px;padding:12px;margin-top:10px;cursor:pointer;font-weight:700;font-size:14px}
+nav{position:fixed;bottom:0;width:100%;max-width:420px;background:var(--bg);border-top:1px solid #eadcc0;display:flex;padding:8px 0}
+nav button{flex:1;border:0;background:none;font-size:11px;color:var(--m);cursor:pointer;opacity:.7}
+nav button.on{color:#7da000;opacity:1;font-weight:800}
+nav b{display:block;font-size:20px}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--m);color:#fff;padding:10px 16px;border-radius:99px;font-size:13px;opacity:0;transition:.3s;pointer-events:none}
+#toast.show{opacity:1}
+.receipt{text-align:center}.receipt .ok{font-size:56px}
+
+</style>
+</head>
+<body>
+<div class="phone">
+  <main id="app"></main>
+  <nav id="nav"></nav>
+  <div id="toast"></div>
+</div>
+<script>
+const rp = n => 'Rp' + Math.round(n).toLocaleString('id-ID');
+const $ = s => document.querySelector(s);
+const KEY = 'greenshift_v1';
+
+// ---------- DATA ----------
+const defaults = {
+  stock: [
+    {id:1,name:'Beras',qty:8,max:10,unit:'kg',days:60},
+    {id:2,name:'Ayam',qty:2.5,max:5,unit:'kg',days:2},
+    {id:3,name:'Minyak',qty:1,max:5,unit:'liter',days:90},
+    {id:4,name:'Telur',qty:20,max:30,unit:'butir',days:10},
+    {id:5,name:'Tomat',qty:0.5,max:2,unit:'kg',days:1},
+    {id:6,name:'Bayam',qty:1,max:3,unit:'ikat',days:1},
+    {id:7,name:'Tempe',qty:10,max:20,unit:'papan',days:3},
+    {id:8,name:'Gula',qty:3,max:5,unit:'kg',days:120},
+    {id:9,name:'Teh',qty:1,max:2,unit:'kg',days:90},
+    {id:10,name:'Bawang Merah',qty:1.5,max:3,unit:'kg',days:14}
+  ],
+  menu: [
+    {id:1,name:'Nasi ayam',price:20000,em:'🍗',uses:{1:.15,2:.15,3:.02}},
+    {id:2,name:'Nasi goreng',price:18000,em:'🍛',uses:{1:.15,4:1,3:.02,10:.02}},
+    {id:3,name:'Tempe goreng',price:8000,em:'🍘',uses:{7:1,3:.02}},
+    {id:4,name:'Es teh manis',price:5000,em:'🧋',uses:{9:.01,8:.03}}
+  ],
+  nextId:100, cart:{}
+};
+let S; try{ S = JSON.parse(localStorage.getItem(KEY) || 'null'); }catch(e){ S=null; } S = S || structuredClone(defaults);
+const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} };
+
+// ---------- NAVIGASI + TOMBOL KEMBALI ----------
+let view = 'home', stack = [], pay = {method:'tunai', cash:0}, saved = {}, energi = {bill:600000,pct:30,cost:18000000}, kul = {kg:20};
+function go(v, push = true){ if(push && v !== view) stack.push(view); view = v; render(); scrollTo(0,0); }
+function back(){ view = stack.pop() || 'home'; render(); }
+function toast(t){ const e=$('#toast'); e.textContent=t; e.className='show'; setTimeout(()=>e.className='',1800); }
+const header = (title, sub) => `<div class="top">${view!=='home'?'<button class="back" onclick="back()">←</button>':''}<span class="pill">GreenShift UMKM</span></div><h1>${title}</h1><p class="sub">${sub||''}</p>`;
+const tabs = [['home','🏠','Beranda'],['kasir','🧾','Kasir'],['selamat','🌿','Penyelamat'],['kulak','👥','Kulakan'],['energi','☀️','Energi']];
+function renderNav(){ $('#nav').innerHTML = tabs.map(t=>`<button class="${view===t[0]?'on':''}" onclick="stack=[];go('${t[0]}',false)"><b>${t[1]}</b>${t[2]}</button>`).join(''); }
+
+// ---------- HELPERS ----------
+const total = () => S.menu.reduce((a,m)=>a+(S.cart[m.id]||0)*m.price,0);
+const items = () => S.menu.filter(m=>S.cart[m.id]);
+const low = s => s.qty/s.max <= .2, mid = s => s.qty/s.max <= .5;
+
+// ---------- VIEWS ----------
+const V = {};
+V.home = () => {
+  const urgent = S.stock.filter(s=>s.days<=2).length;
+  return `<h1>Halo, Bu Sari!</h1><p class="sub">Warung Bu Sari · ${new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'})}</p>
+  <div class="green"><b>Skor Dampak Hijau</b><div class="big">84 / 100</div><span class="tag red">+12 poin</span></div>
+  <div class="grid"><div class="card">Total Hemat Hari Ini<div class="big">Rp35.000</div></div><div class="card">Skor Efisiensi<div class="big">8 / 10</div></div></div>
+  <h2>Akses cepat</h2><div class="quick">
+  <div class="card" onclick="go('kasir')"><b>🧾 Kasir</b><br><small>Catat pesanan pelanggan</small></div>
+  <div class="card" onclick="go('kasir')"><b>📦 Stok Bahan</b><br><small>${S.stock.length} bahan tercatat</small></div>
+  <div class="card" onclick="go('selamat')"><b>🌿 Selamatkan Bahan</b><br><small>Pakai bahan tepat waktu</small></div>
+  <div class="card" onclick="go('energi')"><b>☀️ Energi Surya</b><br><small>Cek potensi hemat listrik</small></div>
+  <div class="card" onclick="share('Skor Dampak Hijau warung saya 84/100 di GreenShift UMKM!')"><b>📞 Bagikan ke WA</b><br><small>Bagikan skor</small></div>
+  <div class="card" onclick="go('kulak')"><b>👥 Gabung Kulakan</b><br><small>Beli bahan bareng</small></div></div>
+  <div class="alert" onclick="go('selamat')">⚠️ ${urgent} bahan perlu dicek hari ini — lihat detail…</div>`;
+};
+V.kasir = () => `${header('Kasir & Stok','Ketuk menu · catat penjualan instan')}
+  <h2>Menu warung</h2><div class="grid">${S.menu.map(m=>{const q=S.cart[m.id]||0;return `<div class="card menu ${q?'on':''}"><div class="em">${m.em}</div><b>${m.name}</b><div class="price">${rp(m.price)}</div>
+  <div class="qty"><button onclick="cart(${m.id},-1)">−</button><b>${q}</b><button onclick="cart(${m.id},1)">+</button></div></div>`}).join('')}</div>
+  <h2>Stok Bahan <small>(${S.stock.length} bahan)</small></h2><div class="card">${S.stock.map(s=>`<div class="row"><div style="flex:1"><b>${s.name}</b> <small>${+s.qty.toFixed(2)} / ${s.max} ${s.unit}</small>
+  <div class="bar"><i class="${low(s)?'low':''}" style="width:${Math.min(100,s.qty/s.max*100)}%"></i></div></div>
+  <span class="tag ${low(s)?'red':''}">${low(s)?'Menipis':mid(s)?'Separuh':'Penuh'}</span>
+  <button class="sm" onclick="stok(${s.id},-1)">−</button><button class="sm" onclick="stok(${s.id},1)">+</button><button class="sm del" onclick="hapus(${s.id})">🗑</button></div>`).join('')||'<small>Belum ada bahan.</small>'}
+  <h2>Tambah bahan baru</h2><div class="f"><input id="nn" placeholder="Nama bahan"><input id="nq" class="s" type="number" placeholder="Jumlah" min="0" step="any"></div>
+  <div class="f"><select id="nu"><option>kg</option><option>liter</option><option>butir</option><option>ikat</option><option>papan</option><option>pcs</option><option>bungkus</option></select><input id="nm" class="s" type="number" placeholder="Kapasitas maks" min="1" step="any"></div>
+  <button class="btn out" onclick="tambah()">+ Tambah Bahan</button></div>
+  <div class="card"><b>${items().reduce((a,m)=>a+S.cart[m.id],0)} item · pesanan aktif</b><div class="row"><small>${items().map(m=>S.cart[m.id]+'× '+m.name).join(' + ')||'Belum ada pesanan'}</small><span class="big" style="font-size:22px">${rp(total())}</span></div></div>
+  <button class="btn" ${total()?'':'disabled'} onclick="pay.cash=0;go('bayar')">Lanjut Bayar · ${rp(total())} →</button>
+  <p class="sub" style="text-align:center;margin-top:6px">Stok otomatis berkurang setelah transaksi dicatat</p>`;
+V.bayar = () => `${header('Pembayaran','Pilih metode dan selesaikan transaksi')}
+  <div class="card"><h2 style="margin-top:0">Ringkasan</h2>${items().map(m=>`<div class="row"><span>${S.cart[m.id]}× ${m.name}</span><b>${rp(S.cart[m.id]*m.price)}</b></div>`).join('')}
+  <div class="row"><b>Total</b><span class="big" style="font-size:22px">${rp(total())}</span></div></div>
+  <h2>Metode</h2><div class="opts">${['tunai','qris','transfer'].map(x=>`<div class="opt ${pay.method===x?'sel':''}" onclick="pay.method='${x}';render()">${x.toUpperCase()}</div>`).join('')}</div>
+  ${pay.method==='tunai'?`<input id="cash" type="number" placeholder="Uang diterima" value="${pay.cash||''}" oninput="pay.cash=+this.value;kembali()"><p class="sub" id="kb" style="margin-top:8px"></p><div class="opts">${[total(),50000,100000].map(v=>`<div class="opt" onclick="pay.cash=${v};render()">${rp(v)}</div>`).join('')}</div>`
+  :pay.method==='qris'?`<div class="card receipt"><div style="font-size:90px">▦</div><small>Scan QRIS ini dengan e-wallet pelanggan<br>(contoh ilustrasi)</small></div>`
+  :`<div class="card"><b>Bank BCA 1234567890</b><br><small>a.n. Warung Bu Sari · transfer tepat ${rp(total())}</small></div>`}
+  <button class="btn" onclick="bayar()">Bayar ${rp(total())} ✓</button>`;
+V.sukses = () => `<div class="receipt card" style="margin-top:30px"><div class="ok">✅</div><h1>Pembayaran Berhasil</h1><p class="sub">Metode: ${saved.method.toUpperCase()}</p>
+  ${saved.items.map(i=>`<div class="row"><span>${i[0]}</span><b>${rp(i[1])}</b></div>`).join('')}<div class="row"><b>Total</b><b>${rp(saved.total)}</b></div>
+  ${saved.change>0?`<div class="row"><span>Kembalian</span><b>${rp(saved.change)}</b></div>`:''}</div>
+  <button class="btn" onclick="stack=[];go('kasir',false)">Transaksi Baru</button><button class="btn out" onclick="stack=[];go('home',false)">Ke Beranda</button>`;
+V.selamat = () => { const l = S.stock.filter(s=>s.days<=3).sort((a,b)=>a.days-b.days);
+  return `${header('Selamatkan bahan','Bahan terpakai, uang tidak terbuang.')}<h2>Bahan yang mendekati kedaluwarsa</h2>
+  ${l.map(s=>`<div class="card row"><div><b>${s.name} · ${+s.qty.toFixed(2)} ${s.unit}</b><br><small>${s.days<=1?'Mulai layu · cek hari ini':'Sisa '+s.days+' hari'}</small></div><button class="sm" onclick="dipakai(${s.id})">✓</button></div>`).join('')||'<div class="card">Semua bahan aman 🎉</div>'}
+  <div class="green"><b>CARA MUDAH: MASAK HARI INI</b><div class="big" style="font-size:20px">Tumis bayam tomat</div><small>±4 porsi · Potensi terselamatkan: Rp15.000</small></div>
+  <div class="card">🛡 <b>Peringatan keamanan</b><br><small>Bahan basi? Jangan digunakan.</small></div>
+  <button class="btn out" onclick="share('Hari ini saya selamatkan bahan makanan lewat GreenShift UMKM 🌿')">Bagikan Promo ke WA</button>`; };
+V.energi = () => { const hemat = energi.bill*energi.pct/100, tahun = hemat*12, balik = Math.ceil(energi.cost/hemat);
+  return `${header('Simulasi Energi Terbarukan','Hitung potensi hemat listrik panel surya')}
+  <div class="card"><b>1. Tagihan listrik per bulan</b><input type="number" value="${energi.bill}" oninput="energi.bill=+this.value||0;hasil()">
+  <br><br><b>2. Bagian listrik dari matahari</b><div class="opts">${[20,30,40].map(p=>`<div class="opt ${energi.pct===p?'sel':''}" onclick="energi.pct=${p};render()">${p}%</div>`).join('')}</div>
+  <b>3. Biaya pemasangan (ilustratif)</b><input type="number" value="${energi.cost}" oninput="energi.cost=+this.value||1;hasil()"></div>
+  <div class="green" id="hasil"><small>HASIL CONTOH · HEMAT ${energi.pct}%</small><div class="big">${rp(hemat)} / bulan</div><small>Setara ${rp(tahun)} per tahun</small><div class="card" style="margin:10px 0 0">Tagihan baru: <b>${rp(energi.bill-hemat)}</b><br>Balik modal: <b>${balik} bulan</b></div></div>
+  <div class="alert">ℹ️ Estimasi, bukan jaminan.</div>`; };
+V.kulak = () => { const tot = 40 + kul.kg, pct = Math.min(100,tot/50*100);
+  return `${header('Kulakan Hijau','Beli bareng. Modal ringan. Jejak lebih kecil.')}
+  <div class="card"><b>Komunitas Dapur Cipete</b><br><small>8 UMKM sekitar · 1 titik ambil bersama</small></div>
+  <div class="card"><span class="tag red">SIMULASI</span><h2>🌾 Beras lokal premium</h2><small>Dari petani Karawang</small>
+  <div class="big">Rp12.000<small>/kg</small></div><small>Normal <s>Rp15.000/kg</s> · <b>Hemat 20%</b></small>
+  <div class="row"><span>${tot>50?50:tot} / 50 kg terkumpul</span></div><div class="bar"><i style="width:${pct}%"></i></div><br>
+  <b>Jatah Anda (kg)</b><div class="qty"><button onclick="kul.kg=Math.max(5,kul.kg-5);render()">−</button><b>${kul.kg} kg</b><button onclick="kul.kg+=5;render()">+</button></div>
+  <div class="row"><span>Bayar: <b>${rp(kul.kg*12000)}</b></span><small>Normal ${rp(kul.kg*15000)}</small></div></div>
+  <button class="btn" onclick="toast('Berhasil gabung kulakan ${kul.kg} kg ✓')">Gabung Kulakan →</button>
+  <button class="btn red" onclick="share('Yuk gabung kulakan beras Rp12.000/kg di GreenShift UMKM!')">Bagikan Promo ke WA</button>`; };
+
+// ---------- AKSI ----------
+function cart(id,d){ S.cart[id]=Math.max(0,(S.cart[id]||0)+d); if(!S.cart[id]) delete S.cart[id]; save(); render(); }
+function stok(id,d){ const s=S.stock.find(x=>x.id===id); const step=s.unit==='kg'||s.unit==='liter'?.5:1; s.qty=Math.max(0,s.qty+d*step); if(s.qty>s.max) s.max=s.qty; save(); render(); }
+function hapus(id){ const s=S.stock.find(x=>x.id===id); if(!confirm(`Hapus ${s.name} dari stok?`)) return; S.stock=S.stock.filter(x=>x.id!==id); save(); render(); }
+function tambah(){ const n=$('#nn').value.trim(), q=+$('#nq').value, m=+$('#nm').value||q;
+  if(!n||!(q>0)) return toast('Isi nama dan jumlah bahan');
+  S.stock.push({id:S.nextId++,name:n,qty:q,max:Math.max(m,q),unit:$('#nu').value,days:30}); save(); render(); toast(n+' ditambahkan'); }
+function dipakai(id){ const s=S.stock.find(x=>x.id===id); s.qty=Math.max(0,s.qty-s.qty/2); s.days=30; save(); render(); toast(s.name+' dicatat dipakai'); }
+function kembali(){ const k=pay.cash-total(); $('#kb').textContent = pay.cash? (k>=0?'Kembalian: '+rp(k):'Kurang: '+rp(-k)) : ''; }
+function bayar(){ const t=total();
+  if(pay.method==='tunai' && pay.cash<t) return toast('Uang kurang '+rp(t-pay.cash));
+  items().forEach(m=>{ for(const sid in m.uses){ const s=S.stock.find(x=>x.id==sid); if(s) s.qty=Math.max(0,s.qty-m.uses[sid]*S.cart[m.id]); } });
+  saved={method:pay.method,total:t,change:pay.method==='tunai'?pay.cash-t:0,items:items().map(m=>[`${S.cart[m.id]}× ${m.name}`,S.cart[m.id]*m.price])};
+  S.cart={}; save(); view='sukses'; stack=[]; render(); }
+function share(t){ open('https://wa.me/?text='+encodeURIComponent(t),'_blank'); }
+function hasil(){ const h=energi.bill*energi.pct/100; $('#hasil').innerHTML=`<small>HASIL CONTOH · HEMAT ${energi.pct}%</small><div class="big">${rp(h)} / bulan</div><small>Setara ${rp(h*12)} per tahun</small><div class="card" style="margin:10px 0 0">Tagihan baru: <b>${rp(energi.bill-h)}</b><br>Balik modal: <b>${Math.ceil(energi.cost/h)} bulan</b></div>`; }
+function render(){ $('#app').innerHTML = V[view](); renderNav(); if(view==='bayar') kembali(); }
+render();
+
+</script>
+</body>
+</html>
